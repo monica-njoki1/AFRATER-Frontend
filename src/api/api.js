@@ -1,4 +1,4 @@
-const BASE_URL = "http://127.0.0.1:5000";
+const BASE_URL = "https://afrater-backend.onrender.com";
 
 // -------- TOKEN HELPERS --------
 const saveToken = (token) => localStorage.setItem("token", token);
@@ -20,7 +20,7 @@ export async function registerUser({ name, email, password, profile_pic }) {
 
   const data = await res.json();
   
-  // ✅ Check if the response was successful
+  // Check if the response was successful
   if (!res.ok) {
     throw new Error(data.error || data.message || "Registration failed");
   }
