@@ -21,44 +21,47 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
     try {
       if (isLogin) {
+        // LOGIN
         const res = await loginUser(email, password);
+
         setMessage("Login successful!");
         setIsError(false);
-        
+
         // Clear form
         setEmail("");
         setPassword("");
-        
-        // Close modal after 1 second and trigger success callback
+
+        // Close modal after short delay
         setTimeout(() => {
           onClose();
           if (onAuthSuccess) onAuthSuccess(res);
-        }, 1000);
+        }, 800);
+
       } else {
-        const res = await registerUser({ name, email, password });
-        setMessage("Registered successfully! Please login.");
-        setIsError(false);
-        
-        // Clear form and switch to login
+        //  REGISTER
+        await registerUser({ name, email, password });
+
+        //  Clear form immediately
         setName("");
         setEmail("");
         setPassword("");
-        
-        // Switch to login form after 1.5 seconds
-        setTimeout(() => {
-          setIsLogin(true);
-          setMessage("");
-        }, 1500);
+
+        //  Switch to login instantly
+        setIsLogin(true);
+
+        // Show success message
+        setMessage("Registered successfully! Please login.");
+        setIsError(false);
       }
     } catch (err) {
       setMessage(err.message || "Something went wrong.");
       setIsError(true);
     }
+
     setLoading(false);
   };
 
   const handleClose = () => {
-    // Clear all state when closing
     setEmail("");
     setPassword("");
     setName("");
@@ -75,14 +78,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={handleClose}
     >
-      <div 
+      <div
         className="bg-gray-900 text-white rounded-2xl p-8 max-w-md w-full relative border border-white/10 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Close button */}
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
@@ -90,13 +94,18 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           <X className="w-6 h-6" />
         </button>
 
+        {/* Title */}
         <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: "Orbitron" }}>
           {isLogin ? "Welcome Back" : "Join AFRATER"}
         </h2>
+
         <p className="text-gray-400 mb-6">
-          {isLogin ? "Login to access your dashboard" : "Create an account to get started"}
+          {isLogin
+            ? "Login to access your dashboard"
+            : "Create an account to get started"}
         </p>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div>
@@ -113,7 +122,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               />
             </div>
           )}
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Email Address
@@ -127,7 +136,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Password
@@ -143,6 +152,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             />
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
@@ -162,6 +172,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </button>
         </form>
 
+        {/* Switch */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-400">
             {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
@@ -174,12 +185,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </p>
         </div>
 
+        {/* Message */}
         {message && (
-          <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
-            isError 
-              ? "bg-red-500/10 border border-red-500/30 text-red-400" 
-              : "bg-green-500/10 border border-green-500/30 text-green-400"
-          }`}>
+          <div
+            className={`mt-4 p-3 rounded-lg text-sm font-medium ${
+              isError
+                ? "bg-red-500/10 border border-red-500/30 text-red-400"
+                : "bg-green-500/10 border border-green-500/30 text-green-400"
+            }`}
+          >
             {message}
           </div>
         )}
