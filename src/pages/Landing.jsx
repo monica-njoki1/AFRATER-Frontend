@@ -44,10 +44,14 @@ export default function Landing() {
   };
 
   const handleAuthSuccess = (userData) => {
-    setUser(userData);
-    console.log("User logged in:", userData);
-    // Optional: redirect to dashboard
-    // window.location.href = "/dashboard";
+    // API returns { token, user: { id, name, email } } — extract the user object
+    setUser(userData.user || userData);
+    setAuthOpen(false);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem("token");
   };
 
   return (
@@ -65,12 +69,9 @@ export default function Landing() {
             <a href="#demo" className="hover:text-cyan-400 transition-colors">Demo</a>
             {user ? (
               <div className="flex items-center gap-3">
-                <span className="text-gray-300">Welcome, {user.name || user.email}</span>
+                <span className="text-gray-300">Welcome, {user?.name || user?.email}</span>
                 <button
-                  onClick={() => {
-                    setUser(null);
-                    localStorage.removeItem("token");
-                  }}
+                  onClick={handleLogout}
                   className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-md font-semibold text-white transition-colors"
                 >
                   Logout
