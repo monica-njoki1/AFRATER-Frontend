@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { registerUser, loginUser } from "../api/api";
 
-
 const INITIAL_STATE = {
   email: "",
   password: "",
@@ -22,7 +21,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       setForm(INITIAL_STATE);
       setIsLogin(true);
     }
-  }, [isOpen]); 
+  }, [isOpen]);
 
   const setField = (field, value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -39,13 +38,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     try {
       if (isLogin) {
         const res = await loginUser(form.email, form.password);
-        // Clear form immediately on success
         setForm(INITIAL_STATE);
         onClose();
         if (onAuthSuccess) onAuthSuccess(res);
       } else {
         await registerUser({ name: form.name, email: form.email, password: form.password });
-        // Clear form and switch to login immediately
         setForm({ ...INITIAL_STATE, message: "Registered successfully! Please login." });
         setIsLogin(true);
       }
@@ -71,7 +68,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 ${!isOpen ? "hidden" : ""}`}
       onClick={handleClose}
     >
       <div
@@ -80,8 +77,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       >
         {/* Close button */}
         <button
-          className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 ${!isOpen ? "hidden" : ""}`}
           onClick={handleClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
         >
           <X className="w-6 h-6" />
         </button>
