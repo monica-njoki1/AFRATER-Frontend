@@ -81,7 +81,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+          className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 ${!isOpen ? "hidden" : ""}`}
         >
           <X className="w-6 h-6" />
         </button>
