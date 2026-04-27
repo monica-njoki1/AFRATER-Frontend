@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { registerUser, loginUser } from "../api/api";
+
 
 const INITIAL_STATE = {
   email: "",
@@ -15,7 +16,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState(INITIAL_STATE);
 
-  if (!isOpen) return null;
+  // Reset form every time modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setForm(INITIAL_STATE);
+      setIsLogin(true);
+    }
+  }, [isOpen]); 
 
   const setField = (field, value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
