@@ -2,79 +2,64 @@ import React, { useState } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { registerUser, loginUser } from "../api/api";
 
+const INITIAL_STATE = {
+  email: "",
+  password: "",
+  name: "",
+  loading: false,
+  message: "",
+  isError: false,
+};
+
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [isError, setIsError] = useState(false);
+  const [form, setForm] = useState(INITIAL_STATE);
 
   if (!isOpen) return null;
 
+  const setField = (field, value) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+  const resetForm = () => {
+    setForm(INITIAL_STATE);
+    setIsLogin(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMessage("");
-    setIsError(false);
+    setForm((prev) => ({ ...prev, loading: true, message: "", isError: false }));
 
     try {
       if (isLogin) {
-        // LOGIN
-        const res = await loginUser(email, password);
-
-        setMessage("Login successful!");
-        setIsError(false);
-
-        // Clear form
-        setEmail("");
-        setPassword("");
-
-        // Close modal after short delay
-        setTimeout(() => {
-          onClose();
-          if (onAuthSuccess) onAuthSuccess(res);
-        }, 800);
-
+        const res = await loginUser(form.email, form.password);
+        // Clear form immediately on success
+        setForm(INITIAL_STATE);
+        onClose();
+        if (onAuthSuccess) onAuthSuccess(res);
       } else {
-        //  REGISTER
-        await registerUser({ name, email, password });
-
-        //  Clear form immediately
-        setName("");
-        setEmail("");
-        setPassword("");
-
-        //  Switch to login instantly
+        await registerUser({ name: form.name, email: form.email, password: form.password });
+        // Clear form and switch to login immediately
+        setForm({ ...INITIAL_STATE, message: "Registered successfully! Please login." });
         setIsLogin(true);
-
-        // Show success message
-        setMessage("Registered successfully! Please login.");
-        setIsError(false);
       }
     } catch (err) {
-      setMessage(err.message || "Something went wrong.");
-      setIsError(true);
+      setForm((prev) => ({
+        ...prev,
+        loading: false,
+        message: err.message || "Something went wrong.",
+        isError: true,
+      }));
     }
-
-    setLoading(false);
   };
 
   const handleClose = () => {
-    setEmail("");
-    setPassword("");
-    setName("");
-    setMessage("");
-    setIsError(false);
-    setIsLogin(true);
+    resetForm();
     onClose();
   };
 
   const switchMode = () => {
-    setIsLogin(!isLogin);
-    setMessage("");
-    setIsError(false);
+    setForm(INITIAL_STATE);
+    setIsLogin((prev) => !prev);
   };
 
   return (
@@ -115,8 +100,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               <input
                 type="text"
                 placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={form.name}
+                onChange={(e) => setField("name", e.target.value)}
                 className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-colors"
                 required
               />
@@ -130,8 +115,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             <input
               type="email"
               placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={form.email}
+              onChange={(e) => setField("email", e.target.value)}
               className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-colors"
               required
             />
@@ -144,8 +129,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             <input
               type="password"
               placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={form.password}
+              onChange={(e) => setField("password", e.target.value)}
               className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-colors"
               required
               minLength={6}
@@ -155,10 +140,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           {/* Submit */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={form.loading}
             className="w-full bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
           >
-            {loading ? (
+            {form.loading ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 Processing...
@@ -186,15 +171,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         </div>
 
         {/* Message */}
-        {message && (
+        {form.message && (
           <div
             className={`mt-4 p-3 rounded-lg text-sm font-medium ${
-              isError
+              form.isError
                 ? "bg-red-500/10 border border-red-500/30 text-red-400"
                 : "bg-green-500/10 border border-green-500/30 text-green-400"
             }`}
           >
-            {message}
+            {form.message}
           </div>
         )}
       </div>
