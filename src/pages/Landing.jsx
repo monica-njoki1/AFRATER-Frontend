@@ -4,6 +4,7 @@ import { Shield, Zap, Database, AlertTriangle, CheckCircle, ArrowRight, Eye, Sea
 import "@fontsource/orbitron/700.css";
 import AuthModal from "../components/AuthModal";
 import Footer from "../components/Footer";
+import ProfileDropdown from "../components/ProfileDropdown";
 
 const STATS = [
   { value: "10K+", label: "Messages Analyzed" },
@@ -36,7 +37,7 @@ export default function Landing() {
     setChecking(true);
     setCheckResult(null);
     await new Promise(resolve => setTimeout(resolve, 1500));
-    const isSuspicious = messageInput.toLowerCase().includes("code") || 
+    const isSuspicious = messageInput.toLowerCase().includes("code") ||
                          messageInput.toLowerCase().includes("refund") ||
                          messageInput.toLowerCase().includes("confirm") ||
                          messageInput.toLowerCase().includes("enter");
@@ -54,6 +55,11 @@ export default function Landing() {
     localStorage.removeItem("token");
   };
 
+  const handleProfileUpdate = (updated) => {
+    // Merge updated fields into current user state
+    setUser((prev) => ({ ...prev, ...updated }));
+  };
+
   return (
     <div className="bg-gray-900 text-white">
       {/* Navigation */}
@@ -68,15 +74,11 @@ export default function Landing() {
             <a href="#features" className="hover:text-cyan-400 transition-colors">Features</a>
             <a href="#demo" className="hover:text-cyan-400 transition-colors">Demo</a>
             {user ? (
-              <div className="flex items-center gap-3">
-                <span className="text-gray-300">Welcome, {user?.name || user?.email}</span>
-                <button
-                  onClick={handleLogout}
-                  className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-md font-semibold text-white transition-colors"
-                >
-                  Logout
-                </button>
-              </div>
+              <ProfileDropdown
+                user={user}
+                onLogout={handleLogout}
+                onProfileUpdate={handleProfileUpdate}
+              />
             ) : (
               <button
                 onClick={() => setAuthOpen(true)}
@@ -193,7 +195,6 @@ export default function Landing() {
             AFRATER combines AI-powered detection, community intelligence, and real-time monitoring to protect users from social engineering scams.
           </motion.p>
         </div>
-
         <div className="grid md:grid-cols-2 gap-8">
           {CAPABILITIES.map((cap,i) => (
             <motion.div key={i} initial={{opacity:0, y:20}} whileInView={{opacity:1, y:0}} viewport={{once:true}} transition={{delay:i*0.1}} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 hover:shadow-2xl hover:scale-[1.02] transition-transform">
@@ -252,10 +253,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
       <Footer />
 
-      {/* Auth Modal */}
       <AuthModal
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
