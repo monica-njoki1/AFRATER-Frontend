@@ -77,11 +77,14 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
     setError("");
     try {
       const updated = await updateProfile({ profile_pic: file });
-      if (onProfileUpdate) onProfileUpdate(updated);
+      // Pass the nested user object back to Landing to update state
+      if (onProfileUpdate) onProfileUpdate(updated.user || updated);
     } catch (err) {
       setError(err.message || "Failed to upload photo.");
     }
     setUploading(false);
+    // Reset file input so same file can be selected again
+    e.target.value = "";
   };
 
   const handleDeleteAccount = async () => {
