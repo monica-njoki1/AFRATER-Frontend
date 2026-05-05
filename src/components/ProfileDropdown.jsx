@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from "react";
 import { Upload, Trash2, LogOut, ChevronDown } from "lucide-react";
 import { updateProfile, deleteAccount } from "../api/api";
 
-// Extract initials from full name e.g. "Monica Njoki" -> "MN"
 function getInitials(name) {
   if (!name) return "?";
   const parts = name.trim().split(" ").filter(Boolean);
@@ -10,7 +9,6 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-// Generate a consistent background color from the name
 function getAvatarColor(name) {
   const colors = [
     "#06b6d4", "#8b5cf6", "#ec4899", "#f59e0b",
@@ -22,7 +20,9 @@ function getAvatarColor(name) {
 }
 
 function Avatar({ user, size = "sm" }) {
-  const avatarUrl = user?.profile_pic
+  const [imgError, setImgError] = useState(false);
+
+  const avatarUrl = user?.profile_pic && !imgError
     ? `https://afrater-backend.onrender.com/uploads/users/${user.profile_pic}`
     : null;
 
@@ -33,11 +33,17 @@ function Avatar({ user, size = "sm" }) {
   if (avatarUrl) {
     return (
       <div className={`${dimensions} rounded-full overflow-hidden flex-shrink-0`}>
-        <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+        <img
+          src={avatarUrl}
+          alt="avatar"
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+        />
       </div>
     );
   }
 
+  // Default: colored circle with initials
   return (
     <div
       className={`${dimensions} rounded-full flex items-center justify-center flex-shrink-0 font-bold text-white`}
@@ -57,7 +63,6 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -77,13 +82,11 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
     setError("");
     try {
       const updated = await updateProfile({ profile_pic: file });
-      // Pass the nested user object back to Landing to update state
       if (onProfileUpdate) onProfileUpdate(updated.user || updated);
     } catch (err) {
       setError(err.message || "Failed to upload photo.");
     }
     setUploading(false);
-    // Reset file input so same file can be selected again
     e.target.value = "";
   };
 
@@ -131,7 +134,6 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
 
           {/* Actions */}
           <div className="py-2">
-            {/* Upload profile pic */}
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
@@ -148,7 +150,6 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
               onChange={handleProfilePicChange}
             />
 
-            {/* Logout */}
             <button
               onClick={() => { setOpen(false); onLogout(); }}
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-white/10 transition-colors"
@@ -157,10 +158,8 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
               Logout
             </button>
 
-            {/* Divider */}
             <div className="border-t border-white/10 my-1" />
 
-            {/* Delete account */}
             <button
               onClick={handleDeleteAccount}
               disabled={deleting}
@@ -171,7 +170,6 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
             </button>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="px-4 pb-3 text-xs text-red-400">{error}</div>
           )}
