@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 //import RegisterForm from "./components/RegisterForm";
 //import LoginForm from "./components/LoginForm";
-import DeleteAccount from "./components/DeleteAccount";
+//import DeleteAccount from "./components/DeleteAccount";
 
 function App() {
   return (
@@ -11,7 +11,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         {/* <Route path="/register" element={<RegisterForm />} />
         <Route path="/login" element={<LoginForm />} /> */}
-        <Route path="/delete" element={<DeleteAccount />} />
+        {/* <Route path="/delete" element={<DeleteAccount />} /> */}
       </Routes>
     </Router>
   );
