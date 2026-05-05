@@ -1,6 +1,52 @@
 import React, { useRef, useState, useEffect } from "react";
-import { User, Upload, Trash2, LogOut, ChevronDown } from "lucide-react";
+import { Upload, Trash2, LogOut, ChevronDown } from "lucide-react";
 import { updateProfile, deleteAccount } from "../api/api";
+
+// Extract initials from full name e.g. "Monica Njoki" -> "MN"
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// Generate a consistent background color from the name
+function getAvatarColor(name) {
+  const colors = [
+    "#06b6d4", "#8b5cf6", "#ec4899", "#f59e0b",
+    "#10b981", "#3b82f6", "#ef4444", "#14b8a6",
+  ];
+  if (!name) return colors[0];
+  const index = name.charCodeAt(0) % colors.length;
+  return colors[index];
+}
+
+function Avatar({ user, size = "sm" }) {
+  const avatarUrl = user?.profile_pic
+    ? `https://afrater-backend.onrender.com/uploads/users/${user.profile_pic}`
+    : null;
+
+  const dimensions = size === "sm" ? "w-8 h-8 text-xs" : "w-12 h-12 text-sm";
+  const initials = getInitials(user?.name);
+  const bgColor = getAvatarColor(user?.name);
+
+  if (avatarUrl) {
+    return (
+      <div className={`${dimensions} rounded-full overflow-hidden flex-shrink-0`}>
+        <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`${dimensions} rounded-full flex items-center justify-center flex-shrink-0 font-bold text-white`}
+      style={{ backgroundColor: bgColor }}
+    >
+      {initials}
+    </div>
+  );
+}
 
 export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
   const [open, setOpen] = useState(false);
@@ -27,7 +73,6 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
   const handleProfilePicChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setUploading(true);
     setError("");
     try {
@@ -55,10 +100,6 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
     }
   };
 
-  const avatarUrl = user?.profile_pic
-    ? `https://afrater-backend.onrender.com/uploads/users/${user.profile_pic}`
-    : null;
-
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Trigger button */}
@@ -66,14 +107,7 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
         onClick={() => { setOpen((prev) => !prev); setConfirmDelete(false); setError(""); }}
         className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
       >
-        {/* Avatar */}
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-cyan-500 flex items-center justify-center flex-shrink-0">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-          ) : (
-            <User className="w-4 h-4 text-white" />
-          )}
-        </div>
+        <Avatar user={user} size="sm" />
         <span className="text-sm font-medium text-gray-200 hidden md:block">
           {user?.name || user?.email}
         </span>
@@ -85,13 +119,7 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
         <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
           {/* User info */}
           <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-cyan-500 flex items-center justify-center flex-shrink-0">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-              ) : (
-                <User className="w-6 h-6 text-white" />
-              )}
-            </div>
+            <Avatar user={user} size="lg" />
             <div className="overflow-hidden">
               <p className="text-white font-semibold text-sm truncate">{user?.name}</p>
               <p className="text-gray-400 text-xs truncate">{user?.email}</p>
