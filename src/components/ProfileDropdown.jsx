@@ -19,12 +19,14 @@ function getAvatarColor(name) {
   return colors[index];
 }
 
-function Avatar({ user, size = "sm" }) {
+function Avatar({ user, previewUrl, size = "sm" }) {
   const [imgError, setImgError] = useState(false);
 
-  const avatarUrl = user?.profile_pic && !imgError
-    ? `https://afrater-backend.onrender.com/uploads/users/${user.profile_pic}`
-    : null;
+  // Use local preview first, then fall back to backend URL
+  const avatarUrl = previewUrl ||
+    (user?.profile_pic && !imgError
+      ? `https://afrater-backend.onrender.com/uploads/users/${user.profile_pic}`
+      : null);
 
   const dimensions = size === "sm" ? "w-8 h-8 text-xs" : "w-12 h-12 text-sm";
   const initials = getInitials(user?.name);
@@ -43,7 +45,6 @@ function Avatar({ user, size = "sm" }) {
     );
   }
 
-  // Default: colored circle with initials
   return (
     <div
       className={`${dimensions} rounded-full flex items-center justify-center flex-shrink-0 font-bold text-white`}
@@ -60,6 +61,7 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
+  const [previewUrl, setPreviewUrl] = useState(null); // local blob preview
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -75,9 +77,21 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   const handleProfilePicChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Show preview instantly using blob URL
+    const blob = URL.createObjectURL(file);
+    setPreviewUrl(blob);
+
     setUploading(true);
     setError("");
     try {
@@ -85,6 +99,7 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
       if (onProfileUpdate) onProfileUpdate(updated.user || updated);
     } catch (err) {
       setError(err.message || "Failed to upload photo.");
+      setPreviewUrl(null); // revert preview on failure
     }
     setUploading(false);
     e.target.value = "";
@@ -113,7 +128,7 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
         onClick={() => { setOpen((prev) => !prev); setConfirmDelete(false); setError(""); }}
         className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
       >
-        <Avatar user={user} size="sm" />
+        <Avatar user={user} previewUrl={previewUrl} size="sm" />
         <span className="text-sm font-medium text-gray-200 hidden md:block">
           {user?.name || user?.email}
         </span>
@@ -125,7 +140,7 @@ export default function ProfileDropdown({ user, onLogout, onProfileUpdate }) {
         <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
           {/* User info */}
           <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3">
-            <Avatar user={user} size="lg" />
+            <Avatar user={user} previewUrl={previewUrl} size="lg" />
             <div className="overflow-hidden">
               <p className="text-white font-semibold text-sm truncate">{user?.name}</p>
               <p className="text-gray-400 text-xs truncate">{user?.email}</p>
