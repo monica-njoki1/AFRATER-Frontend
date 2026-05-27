@@ -58,37 +58,27 @@ function ProfilePanel({ user, onLogout, onProfileUpdate, onClose }) {
   const handleProfilePicChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Show instant preview using blob URL
     const reader = new FileReader();
     reader.onload = async (event) => {
       const dataUrl = event.target.result;
-
-      // Save under email key so it survives logout
-      if (user?.email) {
-        localStorage.setItem(`profile_pic_${user.email}`, dataUrl);
-      }
-
-      const cachedUser = { ...user, profile_pic_cache: dataUrl };
-      onProfileUpdate && onProfileUpdate(cachedUser);
-
-      const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      savedUser.profile_pic_cache = dataUrl;
-      localStorage.setItem("user", JSON.stringify(savedUser));
+      onProfileUpdate && onProfileUpdate({ ...user, profile_pic_cache: dataUrl });
 
       setUploading(true);
       setError("");
       try {
         const updated = await updateProfile({ profile_pic: file });
         const updatedUser = updated.user || updated;
-        if (updatedUser.profile_pic_url) {
-          const finalUser = { ...savedUser, ...updatedUser };
-          localStorage.setItem("user", JSON.stringify(finalUser));
-          if (user?.email) {
-            localStorage.setItem(`profile_pic_${user.email}`, updatedUser.profile_pic_url);
-          }
-          onProfileUpdate && onProfileUpdate(finalUser);
-        }
+        // Use permanent Cloudinary URL — clear the local cache
+        const finalUser = { ...user, ...updatedUser, profile_pic_cache: null };
+        onProfileUpdate && onProfileUpdate(finalUser);
+        const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
+        localStorage.setItem("user", JSON.stringify({ ...savedUser, ...updatedUser, profile_pic_cache: null }));
       } catch (err) {
         setError(err.message || "Failed to upload photo.");
+        // Revert preview on failure
+        onProfileUpdate && onProfileUpdate({ ...user });
       }
       setUploading(false);
       e.target.value = "";

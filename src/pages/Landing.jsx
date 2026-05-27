@@ -36,9 +36,6 @@ export default function Landing() {
 
   const handleAuthSuccess = (userData) => {
     const u = userData.user || userData;
-    // Restore cached photo for this email if it exists — survives logout
-    const cachedPic = localStorage.getItem(`profile_pic_${u.email}`);
-    if (cachedPic) u.profile_pic_cache = cachedPic;
     setUser(u);
     localStorage.setItem("user", JSON.stringify(u));
     setAuthOpen(false);
@@ -48,7 +45,6 @@ export default function Landing() {
     setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    // Do NOT remove profile_pic_<email> — kept for next login
   };
 
   const handleProfileUpdate = (updated) => {
