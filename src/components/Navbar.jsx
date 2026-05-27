@@ -19,10 +19,13 @@ function getAvatarColor(name) {
 function Avatar({ user, size = "sm" }) {
   const [imgError, setImgError] = useState(false);
 
-  // Reset error state when avatar URL changes
-  const avatarSrc = user?.profile_pic_url || user?.profile_pic_cache || null;
-  useEffect(() => { setImgError(false); }, [avatarSrc]);
+  // For Cloudinary URLs, add fl_animated to preserve GIF animation
+  const rawUrl = user?.profile_pic_url || user?.profile_pic_cache || null;
+  const avatarSrc = rawUrl && rawUrl.includes("cloudinary.com")
+    ? rawUrl.replace("/upload/", "/upload/fl_animated,fl_awebp/")
+    : rawUrl;
 
+  useEffect(() => { setImgError(false); }, [avatarSrc]);
   const avatarUrl = !imgError ? avatarSrc : null;
   const dimensions = size === "sm" ? "w-9 h-9 text-xs" : size === "md" ? "w-12 h-12 text-sm" : "w-16 h-16 text-lg";
   const initials = getInitials(user?.name);
