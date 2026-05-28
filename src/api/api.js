@@ -9,7 +9,6 @@ const removeToken = () => localStorage.removeItem("token");
 async function apiFetch(path, options = {}) {
   const url = `${BASE_URL}${path}`;
 
-  // Ping the server first if it might be cold (optional but helps on Render free tier)
   const res = await fetch(url, {
     mode: "cors",
     ...options,
@@ -41,7 +40,6 @@ export async function registerUser({ name, email, password, profile_pic }) {
   formData.append("password", password);
   if (profile_pic) formData.append("profile_pic", profile_pic);
 
-  // NOTE: Do NOT set Content-Type for FormData — browser sets it automatically with boundary
   return apiFetch("/auth/register", {
     method: "POST",
     body: formData,
@@ -63,14 +61,12 @@ export async function loginUser(email, password) {
 // -------- LOGOUT --------
 export async function logoutUser() {
   const token = getToken();
-
   const data = await apiFetch("/auth/logout", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
-
   removeToken();
   return data;
 }
@@ -78,7 +74,6 @@ export async function logoutUser() {
 // -------- GET PROFILE --------
 export async function getProfile() {
   const token = getToken();
-
   return apiFetch("/auth/profile", {
     method: "GET",
     headers: {
@@ -105,16 +100,16 @@ export async function updateProfile({ name, email, profile_pic }) {
 }
 
 // -------- DELETE ACCOUNT --------
-export async function deleteAccount() {
+export async function deleteAccount(password) {
   const token = getToken();
-
   const data = await apiFetch("/auth/delete", {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
+    body: JSON.stringify({ password }),
   });
-
   removeToken();
   return data;
 }
