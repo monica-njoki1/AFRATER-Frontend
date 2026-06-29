@@ -1,3 +1,4 @@
+//src/components/Navbar.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { Shield, Menu, X, Upload, Trash2, LogOut, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { updateProfile, deleteAccount } from "../api/api";

@@ -1,3 +1,4 @@
+//src/components/ProfileDropdown.jsx
 import React, { useRef, useState, useEffect } from "react";
 import { Upload, Trash2, LogOut, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { updateProfile, deleteAccount } from "../api/api";

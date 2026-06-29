@@ -1,3 +1,4 @@
+//src/components/AuthModal.jsx
 import React, { useState, useEffect } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { registerUser, loginUser } from "../api/api";

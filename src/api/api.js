@@ -17,7 +17,6 @@ async function apiFetch(path, options = {}) {
     },
   });
 
-  // Render sometimes returns an HTML error page instead of JSON when cold-starting
   const contentType = res.headers.get("content-type");
   if (!contentType || !contentType.includes("application/json")) {
     throw new Error("Server is starting up, please try again in a few seconds.");
@@ -63,9 +62,7 @@ export async function logoutUser() {
   const token = getToken();
   const data = await apiFetch("/auth/logout", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
   removeToken();
   return data;
@@ -76,9 +73,7 @@ export async function getProfile() {
   const token = getToken();
   return apiFetch("/auth/profile", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -92,9 +87,7 @@ export async function updateProfile({ name, email, profile_pic }) {
 
   return apiFetch("/auth/profile", {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });
 }
@@ -112,4 +105,74 @@ export async function deleteAccount(password) {
   });
   removeToken();
   return data;
+}
+
+// ================================================================
+//  FRAUD API
+// ================================================================
+
+// -------- CHECK MESSAGE --------
+export async function checkMessage(message) {
+  const token = getToken();
+  return apiFetch("/scam/check", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ message }),
+  });
+}
+
+// -------- UPLOAD SCREENSHOT --------
+export async function uploadScreenshot(file) {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return apiFetch("/upload/screenshot", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+}
+
+// -------- INITIATE PAYMENT (STK Push with pre-flight fraud check) --------
+export async function initiatePayment(phone, amount) {
+  const token = getToken();
+  return apiFetch("/mpesa/pay", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ phone, amount }),
+  });
+}
+
+// -------- POLL PAYMENT STATUS --------
+export async function pollPaymentStatus(checkoutRequestId) {
+  const token = getToken();
+  return apiFetch(`/query/stk/${checkoutRequestId}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// -------- GET SCAM REPORTS --------
+export async function getScamReports() {
+  const token = getToken();
+  return apiFetch("/scam/reports", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// -------- GET TRANSACTIONS --------
+export async function getTransactions() {
+  const token = getToken();
+  return apiFetch("/transactions/", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }

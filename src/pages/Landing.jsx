@@ -1,32 +1,45 @@
+// src/pages/Landing.jsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Database, AlertTriangle, CheckCircle, ArrowRight, Eye, Search, Bell, Zap, Shield } from "lucide-react";
+import {
+  Database, AlertTriangle, CheckCircle, ArrowRight,
+  Eye, Search, Bell, Zap, Shield, Loader2, ChevronRight
+} from "lucide-react";
 import "@fontsource/orbitron/700.css";
 import AuthModal from "../components/AuthModal";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
+import { checkMessage } from "../api/api";
 
 const STATS = [
   { value: "10K+", label: "Messages Analyzed" },
-  { value: "98%", label: "Detection Accuracy" },
-  { value: "<1s", label: "Response Time" },
+  { value: "98%",  label: "Detection Accuracy" },
+  { value: "<1s",  label: "Response Time" },
   { value: "500+", label: "Scams Blocked Daily" },
 ];
 
 const CAPABILITIES = [
-  { icon: Eye, title: "Complete Visibility", desc: "Real-time monitoring of all M-Pesa messages and transaction patterns across your network." },
-  { icon: Search, title: "Deep Analysis", desc: "AI-powered pattern recognition that uncovers social engineering tactics others miss." },
-  { icon: Bell, title: "Instant Alerts", desc: "Immediate notifications when suspicious activity is detected, stopping fraud before it happens." },
-  { icon: Database, title: "Community Intelligence", desc: "Crowdsourced fraud database updated in real-time with the latest scam patterns." },
+  { icon: Eye,      title: "Complete Visibility",      desc: "Real-time monitoring of all M-Pesa messages and transaction patterns across your network." },
+  { icon: Search,   title: "Deep Analysis",             desc: "AI-powered pattern recognition that uncovers social engineering tactics others miss." },
+  { icon: Bell,     title: "Instant Alerts",            desc: "Immediate notifications when suspicious activity is detected, stopping fraud before it happens." },
+  { icon: Database, title: "Community Intelligence",    desc: "Crowdsourced fraud database updated in real-time with the latest scam patterns." },
 ];
 
 const USE_CASES = [
   { title: "For Individuals", points: ["Protect personal M-Pesa accounts", "Verify suspicious messages instantly", "Get alerts before sharing sensitive codes"] },
-  { title: "For Businesses", points: ["Safeguard employee transactions", "Monitor business account activity", "Reduce financial fraud losses"] },
-  { title: "For Agents", points: ["Build customer trust", "Identify fraudulent transactions", "Protect your float from scams"] },
+  { title: "For Businesses",  points: ["Safeguard employee transactions", "Monitor business account activity", "Reduce financial fraud losses"] },
+  { title: "For Agents",      points: ["Build customer trust", "Identify fraudulent transactions", "Protect your float from scams"] },
 ];
 
+const VERDICT_STYLE = {
+  fraud:      { bg: "bg-red-500/10 border-red-500/30",      text: "text-red-400",    icon: AlertTriangle, label: "FRAUD DETECTED" },
+  suspicious: { bg: "bg-yellow-500/10 border-yellow-500/30", text: "text-yellow-400", icon: AlertTriangle, label: "SUSPICIOUS" },
+  safe:       { bg: "bg-green-500/10 border-green-500/30",   text: "text-green-400",  icon: CheckCircle,   label: "SAFE" },
+};
+
 export default function Landing() {
+  const navigate = useNavigate();
   const [authOpen, setAuthOpen] = useState(false);
 
   const [user, setUser] = useState(() => {
@@ -34,11 +47,18 @@ export default function Landing() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Demo section state
+  const [demoMessage, setDemoMessage] = useState("");
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoResult, setDemoResult] = useState(null);
+  const [demoError, setDemoError] = useState("");
+
   const handleAuthSuccess = (userData) => {
     const u = userData.user || userData;
     setUser(u);
     localStorage.setItem("user", JSON.stringify(u));
     setAuthOpen(false);
+    navigate("/dashboard");
   };
 
   const handleLogout = () => {
@@ -53,6 +73,27 @@ export default function Landing() {
       localStorage.setItem("user", JSON.stringify(newUser));
       return newUser;
     });
+  };
+
+  const handleDemoAnalyse = async () => {
+    if (!demoMessage.trim()) return;
+
+    // If not logged in, open auth modal instead
+    if (!user) {
+      setAuthOpen(true);
+      return;
+    }
+
+    setDemoLoading(true);
+    setDemoError("");
+    setDemoResult(null);
+    try {
+      const res = await checkMessage(demoMessage.trim());
+      setDemoResult(res);
+    } catch (err) {
+      setDemoError(err.message || "Something went wrong.");
+    }
+    setDemoLoading(false);
   };
 
   return (
@@ -183,21 +224,81 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Demo */}
+      {/* Demo — now wired to real API */}
       <section id="demo" className="py-20 px-6 bg-gray-900">
         <div className="max-w-3xl mx-auto text-center mb-12">
           <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-4xl md:text-5xl font-bold mb-4" style={{fontFamily:"Orbitron"}}>Try the Demo</motion.h2>
-          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.1}} className="text-xl text-gray-300">Paste a suspicious M-Pesa message below and see AFRATER in action.</motion.p>
+          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.1}} className="text-xl text-gray-300">
+            Paste a suspicious M-Pesa message and see AFRATER in action.
+            {!user && <span className="text-cyan-400"> Login to analyse.</span>}
+          </motion.p>
         </div>
-        <div className="max-w-2xl mx-auto bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
-          <textarea
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm resize-none focus:outline-none focus:border-cyan-400 transition-colors"
-            rows={4}
-            placeholder="Paste your M-Pesa message here..."
-          />
-          <button className="w-full py-3 bg-gradient-to-r from-purple-500 to-cyan-400 rounded-lg font-bold text-white hover:scale-[1.01] transition-transform">
-            Analyze Message
-          </button>
+
+        <div className="max-w-2xl mx-auto space-y-4">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+            <textarea
+              value={demoMessage}
+              onChange={(e) => setDemoMessage(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm resize-none focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-gray-500"
+              rows={4}
+              placeholder="e.g. Dear customer, please reverse KES 500 sent by mistake to your account. Send to 0712345678 urgently."
+            />
+            <button
+              onClick={handleDemoAnalyse}
+              disabled={demoLoading || !demoMessage.trim()}
+              className="w-full py-3 bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-lg font-bold text-white transition-all flex items-center justify-center gap-2"
+            >
+              {demoLoading ? (
+                <><Loader2 className="w-5 h-5 animate-spin" /> Analysing...</>
+              ) : !user ? (
+                <><Shield className="w-5 h-5" /> Login to Analyse</>
+              ) : (
+                <><Shield className="w-5 h-5" /> Analyse Message</>
+              )}
+            </button>
+          </div>
+
+          {demoError && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+              {demoError}
+            </div>
+          )}
+
+          {demoResult && (() => {
+            const v = VERDICT_STYLE[demoResult.verdict] || VERDICT_STYLE.safe;
+            const Icon = v.icon;
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`bg-white/5 border rounded-2xl p-6 space-y-4 ${v.bg}`}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon className={`w-6 h-6 ${v.text}`} />
+                  <span className={`font-bold text-lg ${v.text}`}>{v.label}</span>
+                  {demoResult.score !== undefined && (
+                    <span className="ml-auto text-sm text-gray-400">Score: <span className="text-white font-bold">{demoResult.score}/100</span></span>
+                  )}
+                </div>
+                {demoResult.reasons?.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {demoResult.reasons.map((r, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                        <ChevronRight className={`w-4 h-4 flex-shrink-0 mt-0.5 ${v.text}`} />
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="w-full py-2.5 border border-white/20 rounded-lg text-sm text-gray-300 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                >
+                  Open full dashboard <ArrowRight className="w-4 h-4" />
+                </button>
+              </motion.div>
+            );
+          })()}
         </div>
       </section>
 
@@ -215,7 +316,12 @@ export default function Landing() {
       </section>
 
       <Footer />
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} onAuthSuccess={handleAuthSuccess} />
+
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }
