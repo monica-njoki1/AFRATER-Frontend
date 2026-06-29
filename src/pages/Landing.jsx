@@ -20,10 +20,10 @@ const STATS = [
 ];
 
 const CAPABILITIES = [
-  { icon: Eye,      title: "Complete Visibility",      desc: "Real-time monitoring of all M-Pesa messages and transaction patterns across your network." },
-  { icon: Search,   title: "Deep Analysis",             desc: "AI-powered pattern recognition that uncovers social engineering tactics others miss." },
-  { icon: Bell,     title: "Instant Alerts",            desc: "Immediate notifications when suspicious activity is detected, stopping fraud before it happens." },
-  { icon: Database, title: "Community Intelligence",    desc: "Crowdsourced fraud database updated in real-time with the latest scam patterns." },
+  { icon: Eye,      title: "Complete Visibility",   desc: "Real-time monitoring of all M-Pesa messages and transaction patterns across your network." },
+  { icon: Search,   title: "Deep Analysis",          desc: "AI-powered pattern recognition that uncovers social engineering tactics others miss." },
+  { icon: Bell,     title: "Instant Alerts",         desc: "Immediate notifications when suspicious activity is detected, stopping fraud before it happens." },
+  { icon: Database, title: "Community Intelligence", desc: "Crowdsourced fraud database updated in real-time with the latest scam patterns." },
 ];
 
 const USE_CASES = [
@@ -33,31 +33,41 @@ const USE_CASES = [
 ];
 
 const VERDICT_STYLE = {
-  fraud:      { bg: "bg-red-500/10 border-red-500/30",      text: "text-red-400",    icon: AlertTriangle, label: "FRAUD DETECTED" },
+  fraud:      { bg: "bg-red-500/10 border-red-500/30",       text: "text-red-400",    icon: AlertTriangle, label: "FRAUD DETECTED" },
   suspicious: { bg: "bg-yellow-500/10 border-yellow-500/30", text: "text-yellow-400", icon: AlertTriangle, label: "SUSPICIOUS" },
   safe:       { bg: "bg-green-500/10 border-green-500/30",   text: "text-green-400",  icon: CheckCircle,   label: "SAFE" },
 };
 
-export default function Landing() {
+// Smooth scroll helper — works with React Router (no full reload)
+function scrollTo(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+export default function Landing({ onAuthSuccess, onLogout, onProfileUpdate, user: userProp }) {
   const navigate = useNavigate();
   const [authOpen, setAuthOpen] = useState(false);
 
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
+    if (userProp) return userProp;
+    try {
+      const saved = localStorage.getItem("user");
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
   });
 
-  // Demo section state
+  // Demo state
   const [demoMessage, setDemoMessage] = useState("");
   const [demoLoading, setDemoLoading] = useState(false);
-  const [demoResult, setDemoResult] = useState(null);
-  const [demoError, setDemoError] = useState("");
+  const [demoResult, setDemoResult]   = useState(null);
+  const [demoError, setDemoError]     = useState("");
 
   const handleAuthSuccess = (userData) => {
     const u = userData.user || userData;
     setUser(u);
     localStorage.setItem("user", JSON.stringify(u));
     setAuthOpen(false);
+    if (onAuthSuccess) onAuthSuccess(u);
     navigate("/dashboard");
   };
 
@@ -65,25 +75,21 @@ export default function Landing() {
     setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    if (onLogout) onLogout();
   };
 
   const handleProfileUpdate = (updated) => {
     setUser((prev) => {
       const newUser = { ...prev, ...updated };
       localStorage.setItem("user", JSON.stringify(newUser));
+      if (onProfileUpdate) onProfileUpdate(newUser);
       return newUser;
     });
   };
 
   const handleDemoAnalyse = async () => {
     if (!demoMessage.trim()) return;
-
-    // If not logged in, open auth modal instead
-    if (!user) {
-      setAuthOpen(true);
-      return;
-    }
-
+    if (!user) { setAuthOpen(true); return; }
     setDemoLoading(true);
     setDemoError("");
     setDemoResult(null);
@@ -105,29 +111,38 @@ export default function Landing() {
         onProfileUpdate={handleProfileUpdate}
       />
 
-      {/* Hero */}
+      {/* ── Hero ───────────────────────────────────────────────── */}
       <section className="pt-32 pb-20 px-6 relative overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#0b1220] to-[#071126]">
-        <div className="absolute top-0 left-0 w-72 h-72 bg-purple-500 rounded-full opacity-20 blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 right-0 w-80 h-80 bg-cyan-400 rounded-full opacity-20 blur-3xl animate-pulse delay-2000"></div>
+        <div className="absolute top-0 left-0 w-72 h-72 bg-purple-500 rounded-full opacity-20 blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-cyan-400 rounded-full opacity-20 blur-3xl animate-pulse delay-2000" />
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-6 z-10 relative">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 rounded-full text-sm font-medium text-white">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 rounded-full text-sm font-medium">
               <Zap className="w-4 h-4" /> MVP Launch
             </div>
             <h1 className="text-5xl md:text-6xl font-extrabold leading-tight" style={{ fontFamily: "Orbitron" }}>
               SEE WHAT OTHERS MISS.<br />
-              <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">Secure what others can't.</span>
+              <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                Secure what others can't.
+              </span>
             </h1>
             <p className="text-gray-300 text-xl leading-relaxed">
               AFRATER delivers real-time M-Pesa fraud detection, uncovering social engineering scams before they can harm you.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <a href="#demo" className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-cyan-400 text-white rounded-xl font-bold shadow-lg hover:scale-[1.02] transition-transform">
+              {/* ✅ onClick scroll — no href="#" */}
+              <button
+                onClick={() => scrollTo("demo")}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-cyan-400 text-white rounded-xl font-bold shadow-lg hover:scale-[1.02] transition-transform"
+              >
                 Try Live Demo <ArrowRight className="w-5 h-5" />
-              </a>
-              <a href="#platform" className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-white/30 text-white rounded-xl font-semibold hover:bg-white/10 transition">
+              </button>
+              <button
+                onClick={() => scrollTo("platform")}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-white/30 text-white rounded-xl font-semibold hover:bg-white/10 transition"
+              >
                 Learn More
-              </a>
+              </button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8 border-t border-white/20">
               {STATS.map((stat, i) => (
@@ -147,7 +162,7 @@ export default function Landing() {
                     <Shield className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <div className="font-semibold text-white">Fraud Detection</div>
+                    <div className="font-semibold">Fraud Detection</div>
                     <div className="text-sm text-gray-300">Real-time analysis</div>
                   </div>
                 </div>
@@ -173,26 +188,32 @@ export default function Landing() {
                 </div>
               </div>
             </div>
-            <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-4 -right-4 bg-gradient-to-r from-purple-400 to-cyan-400 text-white px-4 py-2 rounded-lg shadow-lg font-semibold text-sm">
+            <motion.div
+              animate={{ y: [0, -12, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -top-4 -right-4 bg-gradient-to-r from-purple-400 to-cyan-400 text-white px-4 py-2 rounded-lg shadow-lg font-semibold text-sm"
+            >
               98% Accuracy
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Platform */}
+      {/* ── Platform ───────────────────────────────────────────── */}
       <section id="platform" className="py-20 px-6 bg-gray-900">
         <div className="max-w-7xl mx-auto text-center mb-16">
-          <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-4xl md:text-5xl font-bold mb-4" style={{fontFamily:"Orbitron"}}>Complete Fraud Protection for M-Pesa</motion.h2>
+          <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-4xl md:text-5xl font-bold mb-4" style={{fontFamily:"Orbitron"}}>
+            Complete Fraud Protection for M-Pesa
+          </motion.h2>
           <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.1}} className="text-xl text-gray-300 max-w-3xl mx-auto">
             AFRATER combines AI-powered detection, community intelligence, and real-time monitoring to protect users from social engineering scams.
           </motion.p>
         </div>
-        <div className="grid md:grid-cols-2 gap-8">
-          {CAPABILITIES.map((cap,i) => (
+        <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+          {CAPABILITIES.map((cap, i) => (
             <motion.div key={i} initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.1}} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 hover:shadow-2xl hover:scale-[1.02] transition-transform">
               <div className="w-12 h-12 bg-cyan-500 rounded-lg flex items-center justify-center mb-4">
-                <cap.icon className="w-6 h-6 text-white"/>
+                <cap.icon className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-xl font-bold mb-2">{cap.title}</h3>
               <p className="text-gray-300">{cap.desc}</p>
@@ -201,18 +222,22 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* ── Features ───────────────────────────────────────────── */}
       <section id="features" className="py-20 px-6 bg-gray-900">
         <div className="max-w-7xl mx-auto text-center mb-16">
-          <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-4xl md:text-5xl font-bold mb-4" style={{fontFamily:"Orbitron"}}>Protection for Everyone</motion.h2>
-          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.1}} className="text-xl text-gray-300">AFRATER adapts to your specific needs</motion.p>
+          <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-4xl md:text-5xl font-bold mb-4" style={{fontFamily:"Orbitron"}}>
+            Protection for Everyone
+          </motion.h2>
+          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.1}} className="text-xl text-gray-300">
+            AFRATER adapts to your specific needs
+          </motion.p>
         </div>
-        <div className="grid md:grid-cols-3 gap-8">
-          {USE_CASES.map((uc,i) => (
+        <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          {USE_CASES.map((uc, i) => (
             <motion.div key={i} initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.1}} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 hover:shadow-2xl transition-transform">
               <h3 className="text-xl font-bold mb-4">{uc.title}</h3>
               <ul className="space-y-3">
-                {uc.points.map((p,j) => (
+                {uc.points.map((p, j) => (
                   <li key={j} className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-300">{p}</span>
@@ -224,10 +249,12 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Demo — now wired to real API */}
+      {/* ── Demo ───────────────────────────────────────────────── */}
       <section id="demo" className="py-20 px-6 bg-gray-900">
         <div className="max-w-3xl mx-auto text-center mb-12">
-          <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-4xl md:text-5xl font-bold mb-4" style={{fontFamily:"Orbitron"}}>Try the Demo</motion.h2>
+          <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-4xl md:text-5xl font-bold mb-4" style={{fontFamily:"Orbitron"}}>
+            Try the Demo
+          </motion.h2>
           <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.1}} className="text-xl text-gray-300">
             Paste a suspicious M-Pesa message and see AFRATER in action.
             {!user && <span className="text-cyan-400"> Login to analyse.</span>}
@@ -241,7 +268,7 @@ export default function Landing() {
               onChange={(e) => setDemoMessage(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm resize-none focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-gray-500"
               rows={4}
-              placeholder="e.g. Dear customer, please reverse KES 500 sent by mistake to your account. Send to 0712345678 urgently."
+              placeholder="e.g. Dear customer, please reverse KES 500 sent by mistake. Call 0712345678 urgently."
             />
             <button
               onClick={handleDemoAnalyse}
@@ -273,11 +300,13 @@ export default function Landing() {
                 animate={{ opacity: 1, y: 0 }}
                 className={`bg-white/5 border rounded-2xl p-6 space-y-4 ${v.bg}`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <Icon className={`w-6 h-6 ${v.text}`} />
                   <span className={`font-bold text-lg ${v.text}`}>{v.label}</span>
                   {demoResult.score !== undefined && (
-                    <span className="ml-auto text-sm text-gray-400">Score: <span className="text-white font-bold">{demoResult.score}/100</span></span>
+                    <span className="ml-auto text-sm text-gray-400">
+                      Score: <span className="text-white font-bold">{demoResult.score}/100</span>
+                    </span>
                   )}
                 </div>
                 {demoResult.reasons?.length > 0 && (
@@ -302,14 +331,21 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* ── CTA ────────────────────────────────────────────────── */}
       <section className="py-20 px-6 bg-gradient-to-br from-purple-500 to-cyan-400 text-white">
         <div className="max-w-4xl mx-auto text-center space-y-6">
-          <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-4xl md:text-5xl font-bold" style={{fontFamily:"Orbitron"}}>Ready to Stop Fraud?</motion.h2>
-          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.1}} className="text-xl text-white/90">Join thousands protecting their M-Pesa transactions with AFRATER</motion.p>
+          <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-4xl md:text-5xl font-bold" style={{fontFamily:"Orbitron"}}>
+            Ready to Stop Fraud?
+          </motion.h2>
+          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.1}} className="text-xl text-white/90">
+            Join thousands protecting their M-Pesa transactions with AFRATER
+          </motion.p>
           <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.2}}>
-            <button onClick={() => setAuthOpen(true)} className="inline-flex items-center gap-2 px-8 py-4 bg-white text-purple-600 rounded-xl font-bold text-lg hover:bg-gray-50 transition-shadow shadow-xl">
-              Get Started Free <ArrowRight className="w-5 h-5"/>
+            <button
+              onClick={() => setAuthOpen(true)}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-purple-600 rounded-xl font-bold text-lg hover:bg-gray-50 transition-shadow shadow-xl"
+            >
+              Get Started Free <ArrowRight className="w-5 h-5" />
             </button>
           </motion.div>
         </div>
