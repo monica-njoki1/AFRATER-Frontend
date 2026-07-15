@@ -784,6 +784,13 @@ export default function Dashboard({ user, onLogout, onProfileUpdate }) {
             <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="space-y-5 pt-4">
 
+              {/* Profile section — top */}
+              <ProfileSection
+                user={user}
+                onLogout={handleLogout}
+                onProfileUpdate={handleProfileUpdate}
+              />
+
               {/* Balance card */}
               <BalanceCard user={user} />
 
@@ -801,13 +808,6 @@ export default function Dashboard({ user, onLogout, onProfileUpdate }) {
 
               {/* Recent transactions */}
               <RecentTransactions onViewAll={() => setScreen("history")} />
-
-              {/* Profile section */}
-              <ProfileSection
-                user={user}
-                onLogout={handleLogout}
-                onProfileUpdate={handleProfileUpdate}
-              />
 
             </motion.div>
           ) : (
