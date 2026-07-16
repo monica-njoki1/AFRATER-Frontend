@@ -525,8 +525,21 @@ function ScanScreen() {
     setLoading(true); setError(""); setResult(null);
     try {
       const res = await uploadScreenshot(file);
+      // Check if OCR is disabled
+      if (res.ocr?.disabled || res.error?.includes("temporarily")) {
+        setError("Screenshot AI analysis is temporarily unavailable. Please copy the message text and use the Check Message tab instead.");
+        setLoading(false);
+        return;
+      }
       setResult(res.fraud ? { ...res.fraud, ocr: res.ocr } : res);
-    } catch (err) { setError(err.message); }
+    } catch (err) {
+      // Show friendly message for API credit errors
+      if (err.message?.includes("credit") || err.message?.includes("billing")) {
+        setError("Screenshot AI analysis is temporarily unavailable. Please copy the message text and use the Check Message tab instead.");
+      } else {
+        setError(err.message);
+      }
+    }
     setLoading(false);
   };
 
