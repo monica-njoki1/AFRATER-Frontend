@@ -635,11 +635,13 @@ function ReceiveScreen() {
 }
 
 function HistoryScreen() {
-  const [txs, setTxs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [txs,      setTxs]      = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [filter,   setFilter]   = useState("all");
   const [selected, setSelected] = useState(null);
-  const [error, setError] = useState("");
+  const [error,    setError]    = useState("");
+  const [clearing, setClearing] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -651,6 +653,18 @@ function HistoryScreen() {
   }, [filter]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleClear = async () => {
+    setClearing(true);
+    try {
+      await apiFetch("/wallet/transactions/clear", { method: "DELETE" });
+      setTxs([]);
+      setShowConfirm(false);
+    } catch (err) {
+      setError(err.message || "Failed to clear history.");
+    }
+    setClearing(false);
+  };
 
   if (selected) {
     const tx = txs.find(t => t.id === selected) || SIMULATED_RECENT.find(t => t.id === selected);
@@ -714,6 +728,40 @@ function HistoryScreen() {
           </button>
         ))}
       </div>
+
+      {/* Clear history button */}
+      {!showConfirm ? (
+        <button
+          onClick={() => setShowConfirm(true)}
+          className="w-full flex items-center justify-center gap-2 py-2.5 border border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-xl text-sm transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Clear Fraud History
+        </button>
+      ) : (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 space-y-3">
+          <p className="text-red-300 text-sm font-semibold">Clear all history?</p>
+          <p className="text-gray-400 text-xs">This will permanently delete all transactions, fraud flags and scam reports. This cannot be undone.</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="flex-1 py-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleClear}
+              disabled={clearing}
+              className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 rounded-lg text-sm text-white font-semibold transition-colors"
+            >
+              {clearing ? "Clearing..." : "Yes, Clear All"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">{error}</div>}
+
       {loading ? (
         <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 text-cyan-400 animate-spin" /></div>
       ) : (
