@@ -1,6 +1,6 @@
 // src/components/Navbar.jsx
 import React, { useState, useRef, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Shield, Menu, X, Upload, Trash2, LogOut, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { updateProfile, deleteAccount } from "../api/api";
 import "@fontsource/orbitron/700.css";
@@ -155,38 +155,7 @@ export default function Navbar({ user, onLoginClick, onLogout, onProfileUpdate }
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState("menu");
   const desktopDropdownRef = useRef(null);
-  const location = useLocation();
   const navigate = useNavigate();
-  const isOnLanding = location.pathname === "/";
-
-  // ✅ Smart nav link handler:
-  // If already on landing → smooth scroll
-  // If on dashboard → navigate to / then scroll after mount
-  const handleNavClick = (sectionId) => {
-    setMobileOpen(false);
-    if (isOnLanding) {
-      const el = document.getElementById(sectionId);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      navigate(`/?section=${sectionId}`);
-    }
-  };
-
-  // If we arrived from dashboard with ?section=xxx, scroll to it
-  useEffect(() => {
-    if (isOnLanding) {
-      const params = new URLSearchParams(window.location.search);
-      const section = params.get("section");
-      if (section) {
-        setTimeout(() => {
-          const el = document.getElementById(section);
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 100);
-        // Clean up the URL
-        window.history.replaceState({}, "", "/");
-      }
-    }
-  }, [isOnLanding]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -203,6 +172,31 @@ export default function Navbar({ user, onLoginClick, onLogout, onProfileUpdate }
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
+  // Smart scroll — works from any page
+  const handleNavClick = (sectionId) => {
+    setMobileOpen(false);
+    if (window.location.pathname === "/") {
+      const el = document.getElementById(sectionId);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      navigate(`/?section=${sectionId}`);
+    }
+  };
+
+  useEffect(() => {
+    if (window.location.pathname === "/") {
+      const params = new URLSearchParams(window.location.search);
+      const section = params.get("section");
+      if (section) {
+        setTimeout(() => {
+          const el = document.getElementById(section);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
+        window.history.replaceState({}, "", "/");
+      }
+    }
+  }, []);
+
   const navLinks = [
     { label: "Platform", section: "platform" },
     { label: "Features", section: "features" },
@@ -213,60 +207,75 @@ export default function Navbar({ user, onLoginClick, onLogout, onProfileUpdate }
     <>
       <nav className="fixed top-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-b border-white/10 z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+
+          {/* Logo */}
           <button onClick={() => navigate("/")} className="flex items-center gap-2">
             <Shield className="w-7 h-7 text-cyan-400" />
             <span className="text-xl font-bold text-white" style={{ fontFamily: "Orbitron" }}>AFRATER</span>
           </button>
 
-          {/* Desktop nav links — only show on landing */}
-          {isOnLanding && (
-            <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-              {navLinks.map(link => (
-                <button
-                  key={link.label}
-                  onClick={() => handleNavClick(link.section)}
-                  className="text-gray-300 hover:text-cyan-400 transition-colors"
-                >
-                  {link.label}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Desktop nav links */}
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium">
+            {navLinks.map(link => (
+              <button key={link.label} onClick={() => handleNavClick(link.section)}
+                className="text-gray-300 hover:text-cyan-400 transition-colors">
+                {link.label}
+              </button>
+            ))}
+          </div>
 
+          {/* Desktop right side */}
           <div className="hidden md:flex items-center gap-3">
             {user ? (
-              <div className="relative" ref={desktopDropdownRef}>
-                <button onClick={() => setProfileOpen(p => !p)} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors">
-                  <Avatar user={user} size="sm" />
-                  <span className="text-sm font-medium text-gray-200">{user?.name?.split(" ")[0]}</span>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${profileOpen ? "rotate-180" : ""}`} />
+              <>
+                {/* ── Go to Dashboard button ── */}
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 rounded-lg font-semibold text-white text-sm flex items-center gap-2 hover:scale-[1.02] transition-transform"
+                >
+                  <Shield className="w-4 h-4" />
+                  Dashboard
                 </button>
-                {profileOpen && (
-                  <div className="absolute right-0 mt-2 w-72 bg-gray-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden">
-                    <ProfilePanel user={user} onLogout={onLogout} onProfileUpdate={onProfileUpdate} onClose={() => setProfileOpen(false)} />
-                  </div>
-                )}
-              </div>
+
+                {/* Profile dropdown */}
+                <div className="relative" ref={desktopDropdownRef}>
+                  <button onClick={() => setProfileOpen(p => !p)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors">
+                    <Avatar user={user} size="sm" />
+                    <span className="text-sm font-medium text-gray-200">{user?.name?.split(" ")[0]}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${profileOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {profileOpen && (
+                    <div className="absolute right-0 mt-2 w-72 bg-gray-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+                      <ProfilePanel user={user} onLogout={onLogout} onProfileUpdate={onProfileUpdate} onClose={() => setProfileOpen(false)} />
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
-              <button onClick={onLoginClick} className="px-5 py-2 bg-gradient-to-r from-purple-500 to-cyan-400 rounded-lg font-semibold text-white hover:scale-[1.02] transition-transform text-sm">
+              <button onClick={onLoginClick}
+                className="px-5 py-2 bg-gradient-to-r from-purple-500 to-cyan-400 rounded-lg font-semibold text-white hover:scale-[1.02] transition-transform text-sm">
                 Get Started
               </button>
             )}
           </div>
 
+          {/* Mobile right side */}
           <div className="flex md:hidden items-center gap-3">
             {user && (
-              <button onClick={() => { setMobileOpen(true); setMobileTab("profile"); }} className="flex items-center">
+              <button onClick={() => { setMobileOpen(true); setMobileTab("profile"); }}>
                 <Avatar user={user} size="sm" />
               </button>
             )}
-            <button onClick={() => { setMobileOpen(true); setMobileTab("menu"); }} className="p-2 text-gray-300 hover:text-white transition-colors">
+            <button onClick={() => { setMobileOpen(true); setMobileTab("menu"); }}
+              className="p-2 text-gray-300 hover:text-white transition-colors">
               <Menu className="w-6 h-6" />
             </button>
           </div>
         </div>
       </nav>
 
+      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
@@ -276,38 +285,57 @@ export default function Navbar({ user, onLoginClick, onLogout, onProfileUpdate }
                 <Shield className="w-5 h-5 text-cyan-400" />
                 <span className="text-sm font-bold text-white" style={{ fontFamily: "Orbitron" }}>AFRATER</span>
               </div>
-              <button onClick={() => setMobileOpen(false)} className="p-2 text-gray-400 hover:text-white transition-colors">
+              <button onClick={() => setMobileOpen(false)} className="p-2 text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
+
             {user && (
               <div className="flex border-b border-white/10">
                 <button onClick={() => setMobileTab("menu")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === "menu" ? "text-cyan-400 border-b-2 border-cyan-400" : "text-gray-400"}`}>Menu</button>
                 <button onClick={() => setMobileTab("profile")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === "profile" ? "text-cyan-400 border-b-2 border-cyan-400" : "text-gray-400"}`}>Profile</button>
               </div>
             )}
+
             <div className="flex-1 overflow-y-auto">
               {mobileTab === "menu" || !user ? (
                 <div className="py-4">
                   {navLinks.map(link => (
-                    <button
-                      key={link.label}
-                      onClick={() => handleNavClick(link.section)}
-                      className="w-full text-left flex items-center px-6 py-4 text-gray-200 hover:text-cyan-400 hover:bg-white/5 transition-colors text-base font-medium"
-                    >
+                    <button key={link.label} onClick={() => handleNavClick(link.section)}
+                      className="w-full text-left flex items-center px-6 py-4 text-gray-200 hover:text-cyan-400 hover:bg-white/5 transition-colors text-base font-medium">
                       {link.label}
                     </button>
                   ))}
+
+                  {/* Dashboard button in mobile menu */}
+                  {user && (
+                    <div className="px-4 pt-4 border-t border-white/10 mt-2">
+                      <button
+                        onClick={() => { setMobileOpen(false); navigate("/dashboard"); }}
+                        className="w-full py-3 bg-gradient-to-r from-purple-500 to-cyan-400 rounded-lg font-semibold text-white text-sm flex items-center justify-center gap-2"
+                      >
+                        <Shield className="w-4 h-4" />
+                        Go to Dashboard
+                      </button>
+                    </div>
+                  )}
+
                   {!user && (
                     <div className="px-4 pt-4 border-t border-white/10 mt-2">
-                      <button onClick={() => { setMobileOpen(false); onLoginClick(); }} className="w-full py-3 bg-gradient-to-r from-purple-500 to-cyan-400 rounded-lg font-semibold text-white text-sm">
+                      <button onClick={() => { setMobileOpen(false); onLoginClick(); }}
+                        className="w-full py-3 bg-gradient-to-r from-purple-500 to-cyan-400 rounded-lg font-semibold text-white text-sm">
                         Get Started
                       </button>
                     </div>
                   )}
                 </div>
               ) : (
-                <ProfilePanel user={user} onLogout={() => { setMobileOpen(false); onLogout(); }} onProfileUpdate={onProfileUpdate} onClose={() => setMobileOpen(false)} />
+                <ProfilePanel
+                  user={user}
+                  onLogout={() => { setMobileOpen(false); onLogout(); }}
+                  onProfileUpdate={onProfileUpdate}
+                  onClose={() => setMobileOpen(false)}
+                />
               )}
             </div>
           </div>
