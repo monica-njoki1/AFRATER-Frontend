@@ -28,14 +28,20 @@ async function apiFetch(path, options = {}) {
   return data;
 }
 
-// ── Simulated balance data (replace with real Daraja later) ─────
-const SIMULATED_BALANCE = {
-  available: 12450.00,
-  currency: "KES",
-  accounts: [
-    { name: "M-Pesa Wallet", balance: 12450.00, type: "mobile" },
-  ]
-};
+// ── Simulated balance — updates when payments go through ─────────
+const INITIAL_BALANCE = 12450.00;
+const BALANCE_KEY = "afrater_sim_balance";
+
+function getSimBalance() {
+  try {
+    const saved = localStorage.getItem(BALANCE_KEY);
+    return saved ? parseFloat(saved) : INITIAL_BALANCE;
+  } catch { return INITIAL_BALANCE; }
+}
+
+function setSimBalance(amount) {
+  try { localStorage.setItem(BALANCE_KEY, amount.toString()); } catch {}
+}
 
 // ── Simulated recent transactions ────────────────────────────────
 const SIMULATED_RECENT = [
@@ -87,40 +93,40 @@ function Avatar({ user, size = "md" }) {
 // ================================================================
 //  BALANCE CARD
 // ================================================================
-function BalanceCard({ user }) {
+function BalanceCard({ balance, onRefresh }) {
   const [show, setShow] = useState(true);
-  const bal = SIMULATED_BALANCE;
 
   return (
     <div className="relative rounded-2xl overflow-hidden">
-      {/* Gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-purple-700 to-cyan-600 opacity-90" />
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgY3g9IjMwIiBjeT0iMzAiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L2c+PC9zdmc+')] opacity-40" />
 
       <div className="relative p-5 space-y-4">
-        {/* Top row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-white/80" />
             <span className="text-white/80 text-xs font-medium tracking-wider uppercase">M-Pesa Wallet</span>
           </div>
-          <button onClick={() => setShow(s => !s)} className="text-white/60 hover:text-white transition-colors">
-            {show ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={onRefresh} className="text-white/40 hover:text-white transition-colors">
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => setShow(s => !s)} className="text-white/60 hover:text-white transition-colors">
+              {show ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
-        {/* Balance */}
         <div>
           <p className="text-white/60 text-xs mb-1">Available Balance</p>
-          <div className="flex items-end gap-2">
+          <motion.div key={balance} initial={{ scale: 0.97 }} animate={{ scale: 1 }}>
             <span className="text-4xl font-extrabold text-white tracking-tight" style={{ fontFamily: "Orbitron" }}>
-              {show ? `KES ${bal.available.toLocaleString("en-KE", { minimumFractionDigits: 2 })}` : "KES ••••••"}
+              {show ? `KES ${balance.toLocaleString("en-KE", { minimumFractionDigits: 2 })}` : "KES ••••••"}
             </span>
-          </div>
+          </motion.div>
           <p className="text-white/40 text-xs mt-1">* Simulated — live data coming soon</p>
         </div>
 
-        {/* Quick stats */}
         <div className="grid grid-cols-2 gap-3 pt-1">
           <div className="bg-white/10 rounded-xl px-3 py-2.5">
             <div className="flex items-center gap-1.5 mb-0.5">
@@ -745,9 +751,21 @@ function HistoryScreen() {
 //  MAIN DASHBOARD
 // ================================================================
 export default function Dashboard({ user, onLogout, onProfileUpdate }) {
-  // null = home, otherwise = screen id
-  const [screen, setScreen] = useState(null);
+  const [screen,  setScreen]  = useState(null);
+  const [balance, setBalance] = useState(getSimBalance);
   const navigate = useNavigate();
+
+  const deductBalance = (amount) => {
+    setBalance(prev => {
+      const next = Math.max(0, prev - amount);
+      setSimBalance(next);
+      return next;
+    });
+  };
+
+  const refreshBalance = () => {
+    setBalance(getSimBalance());
+  };
 
   const handleLogout = async () => {
     try { await logoutUser(); } catch {}
@@ -762,7 +780,7 @@ export default function Dashboard({ user, onLogout, onProfileUpdate }) {
   const screenMap = {
     check:   <MessageScreen />,
     scan:    <ScanScreen />,
-    send:    <PaymentTab />,
+    send:    <PaymentTab onPaymentSuccess={(amount) => { deductBalance(amount); setScreen(null); }} />,
     receive: <ReceiveScreen />,
     history: <HistoryScreen />,
   };
@@ -803,7 +821,7 @@ export default function Dashboard({ user, onLogout, onProfileUpdate }) {
               className="space-y-5 pt-4">
 
               {/* Balance card */}
-              <BalanceCard user={user} />
+              <BalanceCard balance={balance} onRefresh={refreshBalance} />
 
               {/* Fraud alert banner */}
               <FraudAlertBanner />

@@ -282,6 +282,18 @@ function ProfileSection({ user, onLogout, onProfileUpdate }) {
   const [deleting,   setDeleting]   = useState(false);
   const [error,      setError]      = useState("");
   const fileRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false); setShowDelete(false); setDelPass(""); setError("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const handlePicChange = async (e) => {
     const file = e.target.files[0];
@@ -312,44 +324,52 @@ function ProfileSection({ user, onLogout, onProfileUpdate }) {
   };
 
   return (
-    <div className="bg-gray-800/60 border border-white/10 rounded-2xl overflow-hidden">
-      {/* Trigger row */}
-      <button onClick={() => { setOpen(o => !o); setShowDelete(false); setError(""); }}
-        className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-white/5 transition-colors">
-        <Avatar user={user} size="md" />
-        <div className="flex-1 text-left overflow-hidden">
-          <p className="text-white font-semibold text-sm truncate">{user?.name}</p>
-          <p className="text-gray-400 text-xs truncate">{user?.email}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-400 rounded-full" />
-          {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-        </div>
+    <div className="relative" ref={dropdownRef}>
+      {/* Compact trigger — avatar + name + chevron */}
+      <button
+        onClick={() => { setOpen(o => !o); setShowDelete(false); setError(""); }}
+        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
+      >
+        <Avatar user={user} size="sm" />
+        <span className="text-sm font-medium text-gray-200 hidden sm:block max-w-[100px] truncate">
+          {user?.name?.split(" ")[0]}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {/* Expandable content */}
+      {/* Dropdown panel */}
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-white/10">
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-12 w-72 bg-gray-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+          >
+            {/* User info header */}
+            <div className="px-4 py-4 flex items-center gap-3 border-b border-white/10">
+              <Avatar user={user} size="md" />
+              <div className="overflow-hidden">
+                <p className="text-white font-bold text-sm truncate">{user?.name}</p>
+                <p className="text-gray-400 text-xs truncate">{user?.email}</p>
+              </div>
+            </div>
 
             {!showDelete ? (
               <div className="py-2">
-                {/* Change photo */}
                 <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-white/5 transition-colors disabled:opacity-50">
-                  <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-white/10 transition-colors disabled:opacity-50">
+                  <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
                     <Upload className="w-4 h-4 text-cyan-400" />
                   </div>
                   {uploading ? "Uploading..." : "Change Profile Photo"}
                 </button>
                 <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/gif" className="hidden" onChange={handlePicChange} />
 
-                {/* Logout */}
                 <button onClick={() => { setOpen(false); onLogout(); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-white/5 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-gray-500/20 flex items-center justify-center">
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-white/10 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-gray-500/20 flex items-center justify-center flex-shrink-0">
                     <LogOut className="w-4 h-4 text-gray-400" />
                   </div>
                   Logout
@@ -357,10 +377,9 @@ function ProfileSection({ user, onLogout, onProfileUpdate }) {
 
                 <div className="border-t border-white/10 my-1" />
 
-                {/* Delete account */}
                 <button onClick={() => setShowDelete(true)}
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
                     <Trash2 className="w-4 h-4 text-red-400" />
                   </div>
                   Delete Account
@@ -750,33 +769,32 @@ export default function Dashboard({ user, onLogout, onProfileUpdate }) {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* Top nav — only show on home */}
-      {!screen && (
-        <div className="fixed top-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-b border-white/10 z-50">
-          <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+      {/* Unified top nav — always visible */}
+      <div className="fixed top-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-b border-white/10 z-40">
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+          {/* Left side */}
+          {screen ? (
+            <button onClick={() => setScreen(null)} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-white font-semibold text-sm">
+                {screen === "check" ? "Check Message" : screen === "scan" ? "Screenshot Scan" : screen === "send" ? "Send Payment" : screen === "receive" ? "Receive Check" : "History"}
+              </span>
+            </button>
+          ) : (
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-cyan-400" />
               <span className="text-base font-bold text-white" style={{ fontFamily: "Orbitron" }}>AFRATER</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-green-400 text-xs font-medium">Protected</span>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Sub-screen nav */}
-      {screen && (
-        <div className="fixed top-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-b border-white/10 z-50">
-          <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-            <button onClick={() => setScreen(null)} className="p-1.5 text-gray-400 hover:text-white transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <span className="text-white font-semibold capitalize">{screen === "check" ? "Check Message" : screen === "scan" ? "Screenshot Scan" : screen === "send" ? "Send Payment" : screen === "receive" ? "Receive Check" : "History"}</span>
-          </div>
+          {/* Right side — profile dropdown always visible */}
+          <ProfileSection
+            user={user}
+            onLogout={handleLogout}
+            onProfileUpdate={handleProfileUpdate}
+          />
         </div>
-      )}
+      </div>
 
       <main className="pt-16 pb-6 px-4 max-w-lg mx-auto">
         <AnimatePresence mode="wait">
@@ -801,13 +819,6 @@ export default function Dashboard({ user, onLogout, onProfileUpdate }) {
 
               {/* Recent transactions */}
               <RecentTransactions onViewAll={() => setScreen("history")} />
-
-              {/* Profile section */}
-              <ProfileSection
-                user={user}
-                onLogout={handleLogout}
-                onProfileUpdate={handleProfileUpdate}
-              />
 
             </motion.div>
           ) : (
